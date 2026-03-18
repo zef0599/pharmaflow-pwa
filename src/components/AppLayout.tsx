@@ -12,22 +12,31 @@ import {
   Moon,
   Sun,
   Pill,
+  Truck,
+  Users,
+  BarChart3,
+  WifiOff,
+  Wifi,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/pos", icon: ShoppingCart, label: "Point of Sale" },
-  { to: "/inventory", icon: Package, label: "Inventory" },
-  { to: "/shortages", icon: AlertTriangle, label: "Shortages" },
-  { to: "/returns", icon: RotateCcw, label: "Returns" },
-  { to: "/settings", icon: Settings, label: "Settings" },
+  { to: "/app", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/app/pos", icon: ShoppingCart, label: "Point of Sale" },
+  { to: "/app/inventory", icon: Package, label: "Inventory" },
+  { to: "/app/shortages", icon: AlertTriangle, label: "Shortages" },
+  { to: "/app/returns", icon: RotateCcw, label: "Returns" },
+  { to: "/app/suppliers", icon: Truck, label: "Suppliers" },
+  { to: "/app/customers", icon: Users, label: "Customers" },
+  { to: "/app/reports", icon: BarChart3, label: "Reports" },
+  { to: "/app/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dark, setDark] = useState(false);
+  const [online] = useState(true); // Mock offline indicator
 
   const toggleDark = () => {
     setDark(!dark);
@@ -53,9 +62,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex h-14 items-center gap-2 border-b border-border px-4">
           <Pill className="h-5 w-5 text-primary" />
           <span className="text-sm font-semibold tracking-tight">PharmOps</span>
+          <button
+            className="ml-auto lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
         </div>
 
-        <nav className="flex-1 space-y-1 p-2">
+        <nav className="flex-1 space-y-0.5 p-2 overflow-y-auto">
           {navItems.map((item) => {
             const active = location.pathname === item.to;
             return (
@@ -76,7 +91,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="border-t border-border p-3">
+        <div className="border-t border-border p-3 space-y-1">
+          {/* Offline Sync Indicator */}
+          <div className="flex items-center gap-3 px-3 py-2 text-xs">
+            {online ? (
+              <>
+                <Wifi className="h-3.5 w-3.5 text-primary" />
+                <span className="text-muted-foreground">Connected</span>
+                <span className="ml-auto h-2 w-2 rounded-full bg-primary animate-pulse" />
+              </>
+            ) : (
+              <>
+                <WifiOff className="h-3.5 w-3.5 text-warning" />
+                <span className="text-warning font-medium">Offline — saving locally</span>
+              </>
+            )}
+          </div>
           <button
             onClick={toggleDark}
             className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
@@ -100,6 +130,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Button>
           <div className="flex-1" />
           <div className="flex items-center gap-2">
+            {!online && (
+              <span className="text-xs font-medium text-warning bg-warning/10 px-2 py-1 rounded-sm flex items-center gap-1">
+                <WifiOff className="h-3 w-3" />
+                Offline
+              </span>
+            )}
             <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-sm">
               Trial: 5 days left
             </span>
