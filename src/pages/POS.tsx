@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
-import { Search, Plus, Minus, Trash2, CreditCard, Banknote, User } from "lucide-react";
+import { Search, Plus, Minus, Trash2, CreditCard, Banknote, User, Camera, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 interface CartItem {
   id: number;
@@ -15,25 +16,36 @@ interface CartItem {
 }
 
 const mockProducts = [
-  { id: 1, name: "Amoxicillin 500mg", batchNo: "B882", expiry: "12/2025", wholesaleCost: 8.0, price: 12.5, stock: 45 },
-  { id: 2, name: "Paracetamol 500mg", batchNo: "B441", expiry: "03/2026", wholesaleCost: 3.0, price: 8.0, stock: 120 },
-  { id: 3, name: "Omeprazole 20mg", batchNo: "B223", expiry: "08/2025", wholesaleCost: 6.5, price: 12.0, stock: 32 },
-  { id: 4, name: "Metformin 850mg", batchNo: "B119", expiry: "01/2026", wholesaleCost: 5.0, price: 12.5, stock: 60 },
-  { id: 5, name: "Ibuprofen 400mg", batchNo: "B554", expiry: "06/2025", wholesaleCost: 4.0, price: 8.0, stock: 85 },
-  { id: 6, name: "Ciprofloxacin 500mg", batchNo: "B667", expiry: "09/2025", wholesaleCost: 7.5, price: 15.0, stock: 28 },
+  { id: 1, name: "Amoxicillin 500mg", batchNo: "B882", expiry: "12/2025", wholesaleCost: 8.0, price: 12.5, stock: 45, daysToExpiry: 275 },
+  { id: 2, name: "Paracetamol 500mg", batchNo: "B441", expiry: "03/2026", wholesaleCost: 3.0, price: 8.0, stock: 120, daysToExpiry: 365 },
+  { id: 3, name: "Omeprazole 20mg", batchNo: "B223", expiry: "08/2025", wholesaleCost: 6.5, price: 12.0, stock: 32, daysToExpiry: 141 },
+  { id: 4, name: "Metformin 850mg", batchNo: "B119", expiry: "01/2026", wholesaleCost: 5.0, price: 12.5, stock: 60, daysToExpiry: 310 },
+  { id: 5, name: "Ibuprofen 400mg", batchNo: "B554", expiry: "06/2025", wholesaleCost: 4.0, price: 8.0, stock: 85, daysToExpiry: 93 },
+  { id: 6, name: "Ciprofloxacin 500mg", batchNo: "B667", expiry: "09/2025", wholesaleCost: 7.5, price: 15.0, stock: 28, daysToExpiry: 188 },
 ];
 
 export default function POS() {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentType, setPaymentType] = useState<"cash" | "customer">("cash");
+  const [scannerOpen, setScannerOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const filtered = mockProducts.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const addToCart = (product: typeof mockProducts[0]) => {
+    // FEFO toast for near-expiry items
+    if (product.daysToExpiry <= 90) {
+      toast({
+        title: "⚠️ Near Expiry Alert",
+        description: `${product.name} (Batch #${product.batchNo}) expires in ${product.daysToExpiry} days. FEFO applied.`,
+        variant: "destructive",
+      });
+    }
+
     setCart((prev) => {
       const existing = prev.find((c) => c.id === product.id);
       if (existing) {
@@ -93,6 +105,14 @@ export default function POS() {
     0
   );
 
+  const confirmSale = () => {
+    toast({
+      title: "✅ Sale Confirmed",
+      description: `Invoice generated for $${total.toFixed(2)} (${paymentType}). ${cart.length} items sold.`,
+    });
+    setCart([]);
+  };
+
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full">
       {/* Product Search Panel */}
@@ -104,21 +124,45 @@ export default function POS() {
           </kbd>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            ref={searchRef}
-            placeholder="Search by name or scan barcode..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 font-mono text-sm"
-            autoFocus
-          />
+        {/* Search + Scanner */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={searchRef}
+              placeholder="Search by name or scan barcode..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 font-mono text-sm"
+              autoFocus
+            />
+          </div>
+          <Button
+            variant={scannerOpen ? "default" : "outline"}
+            size="icon"
+            onClick={() => setScannerOpen(!scannerOpen)}
+            title="Open barcode scanner"
+          >
+            {scannerOpen ? <X className="h-4 w-4" /> : <Camera className="h-4 w-4" />}
+          </Button>
         </div>
 
+        {/* Barcode Scanner Placeholder */}
+        {scannerOpen && (
+          <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-8 text-center">
+            <Camera className="h-10 w-10 mx-auto text-primary/50 mb-2" />
+            <p className="text-sm font-medium text-primary">Camera Barcode Scanner</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Point your device camera at a barcode to scan
+            </p>
+            <div className="mt-3 h-40 bg-foreground/5 rounded-md flex items-center justify-center border border-border">
+              <span className="text-xs text-muted-foreground font-mono">Camera feed will appear here</span>
+            </div>
+          </div>
+        )}
+
         {/* Product List */}
-        <div className="space-y-1 max-h-[calc(100vh-240px)] overflow-y-auto">
+        <div className="space-y-1 max-h-[calc(100vh-300px)] overflow-y-auto">
           {(search ? filtered : mockProducts).map((product) => (
             <button
               key={product.id}
@@ -129,6 +173,9 @@ export default function POS() {
                 <p className="text-sm font-medium">{product.name}</p>
                 <p className="text-xs text-muted-foreground">
                   Exp: {product.expiry} · Batch #{product.batchNo} · Stock: {product.stock}
+                  {product.daysToExpiry <= 90 && (
+                    <span className="ml-1 text-warning font-medium">⚠ {product.daysToExpiry}d</span>
+                  )}
                 </p>
               </div>
               <div className="text-right">
@@ -163,10 +210,7 @@ export default function POS() {
               const margin = ((item.price - item.wholesaleCost) / item.wholesaleCost) * 100;
               const belowCost = item.price <= item.wholesaleCost;
               return (
-                <div
-                  key={item.id}
-                  className="rounded-[12px] bg-secondary/50 p-2"
-                >
+                <div key={item.id} className="rounded-[12px] bg-secondary/50 p-2">
                   <div className="flex justify-between items-center p-2 bg-card rounded-[4px]">
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium truncate">{item.name}</h4>
@@ -265,9 +309,9 @@ export default function POS() {
               </button>
             </div>
 
-            <Button className="w-full" size="lg">
-              <CreditCard className="mr-2 h-4 w-4" />
-              Complete Sale · ${total.toFixed(2)}
+            <Button className="w-full" size="lg" onClick={confirmSale}>
+              <FileText className="mr-2 h-4 w-4" />
+              Confirm Sale · ${total.toFixed(2)}
             </Button>
           </div>
         )}
