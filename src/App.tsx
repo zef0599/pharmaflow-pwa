@@ -12,6 +12,9 @@ import Shortages from "@/pages/Shortages";
 import Returns from "@/pages/Returns";
 import Suppliers from "@/pages/Suppliers";
 import Customers from "@/pages/Customers";
+import CustomerDebts from "@/pages/CustomerDebts";
+import Employees from "@/pages/Employees";
+import Expenses from "@/pages/Expenses";
 import Reports from "@/pages/Reports";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "./pages/NotFound.tsx";
@@ -36,6 +39,9 @@ const App = () => (
           <Route path="/app/returns" element={<AppLayout><Returns /></AppLayout>} />
           <Route path="/app/suppliers" element={<AppLayout><Suppliers /></AppLayout>} />
           <Route path="/app/customers" element={<AppLayout><Customers /></AppLayout>} />
+          <Route path="/app/debts" element={<AppLayout><CustomerDebts /></AppLayout>} />
+          <Route path="/app/employees" element={<AppLayout><Employees /></AppLayout>} />
+          <Route path="/app/expenses" element={<AppLayout><Expenses /></AppLayout>} />
           <Route path="/app/reports" element={<AppLayout><Reports /></AppLayout>} />
           <Route path="/app/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
           <Route path="*" element={<NotFound />} />
